@@ -34,7 +34,16 @@ logic and the review notes.
 
 ## Download
 
-Desktop installers for macOS, Windows and Linux are on the [releases page](https://github.com/AndroidPoet/Depot/releases).
+**[Download the latest release](https://github.com/AndroidPoet/Depot/releases/latest)**
+
+| Your computer | File to pick |
+|---|---|
+| Mac with Apple Silicon (M1 and later) | `Depot-<version>-macos-arm64.dmg` |
+| Mac with Intel | `Depot-<version>-macos-x64.dmg` |
+| Windows | `Depot-<version>-windows-x64.msi` |
+| Ubuntu, Debian | `Depot-<version>-linux-x64.deb` |
+| Fedora, RHEL | `Depot-<version>-linux-x64.rpm` |
+
 They are not code-signed. The release notes say how to open them, and [`docs/VERIFY.md`](docs/VERIFY.md) says how to
 check a download against its checksums (SHA-256, SHA-512, MD5) and its build attestation.
 

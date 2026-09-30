@@ -124,7 +124,7 @@ jobs:
           subject-path: dist/Depot-*
       - name: Publish the release
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --prerelease --title "Depot ${TAG#v}" --notes-file .github/release-notes.md
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --latest --title "Depot ${TAG#v}" --notes-file .github/release-notes.md
           gh release upload "$TAG" dist/* --clobber
 
   verify:
