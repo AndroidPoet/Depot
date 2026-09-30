@@ -39,6 +39,7 @@ kotlin {
         jvmCommonMain.dependencies {
             implementation(libs.okhttp)
             implementation(libs.gson)
+            implementation(libs.apksig)
             implementation(libs.coil.network.okhttp)
         }
         androidMain.dependencies {

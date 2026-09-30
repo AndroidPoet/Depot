@@ -67,7 +67,9 @@ class AdbDevice : TargetDevice {
             "$home/Android/Sdk",
             System.getenv("LOCALAPPDATA")?.let { "$it\\Android\\Sdk" },
         ).map { File(File(it, "platform-tools"), executable) }
-        val onPath = System.getenv("PATH").orEmpty().split(File.pathSeparator).map { File(it, executable) }
+        val onPath = System.getenv("PATH").orEmpty().split(File.pathSeparator)
+            .filter { File(it).isAbsolute }
+            .map { File(it, executable) }
         return (sdkRoots + onPath).firstOrNull { it.canExecute() }?.absolutePath
     }
 

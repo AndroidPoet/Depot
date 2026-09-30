@@ -3,6 +3,7 @@ package dev.androidpoet.depot.engine
 import dev.androidpoet.depot.catalog.AppVersion
 import dev.androidpoet.depot.catalog.Catalog
 import dev.androidpoet.depot.catalog.CatalogApp
+import dev.androidpoet.depot.repo.ApkInspector
 import dev.androidpoet.depot.repo.CatalogCache
 import dev.androidpoet.depot.repo.EntryVerificationException
 import dev.androidpoet.depot.repo.EntryVerifier
@@ -14,6 +15,7 @@ import dev.androidpoet.depot.repo.RepoClient
 import dev.androidpoet.depot.repo.SyncDecision
 import dev.androidpoet.depot.repo.apkFileName
 import dev.androidpoet.depot.repo.repoUrl
+import dev.androidpoet.depot.repo.requireExpectedApk
 import dev.androidpoet.depot.repo.requireIntegrity
 import dev.androidpoet.depot.repo.syncDecision
 import kotlinx.coroutines.CancellationException
@@ -153,6 +155,11 @@ class DepotEngine(
                 requireIntegrity(apk, version.sha256, version.size)
             } catch (e: IntegrityException) {
                 return InstallState.Failed("Checksum did not match, the download was discarded")
+            }
+            try {
+                requireExpectedApk(ApkInspector.inspect(apk), packageName, version)
+            } catch (e: IntegrityException) {
+                return InstallState.Failed("${e.message}. The download was discarded")
             }
             setInstall(packageName, InstallState.Installing)
             val failure = target.install(apk, packageName) { setInstall(packageName, InstallState.AwaitingConfirmation) }

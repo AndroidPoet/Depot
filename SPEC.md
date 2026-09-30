@@ -40,7 +40,15 @@ the app's private data directory and is trusted as written.
 5. **APK.** The local file name is `<sha256>.apk`, never derived from the index name. The download aborts when it
    exceeds the index size. SHA-256 and size must equal the index values before the file reaches an installer.
    The file is deleted after every install attempt, successful or not.
-6. All traffic is HTTPS. No redirect to plain HTTP is followed.
+6. **APK identity.** After the hash check the APK itself is opened. Its signature must be valid. The package name
+   in its manifest must equal the package being installed, and its version code must equal the catalogue's. When
+   the catalogue names a signer, the APK must have exactly one signing certificate and its SHA-256 must equal it.
+   Any mismatch discards the download. This runs on both platforms before an installer sees the file.
+7. All traffic is HTTPS. No redirect to plain HTTP is followed.
+8. **Desktop storage.** The data and cache directories are per-user (`Application Support` and `Caches` on macOS,
+   `%APPDATA%` and `%LOCALAPPDATA%` on Windows, XDG directories on Linux) and are created owner-only where the
+   file system supports it. Nothing is downloaded into a shared temp directory. `adb` is only taken from absolute
+   directories.
 
 ## 3. Catalogue model
 
@@ -121,7 +129,8 @@ One abstraction, two implementations.
 
 Naming: `test_{unit}_{condition}_{expectedResult}`. Fixtures in `shared/src/desktopTest/resources/fixtures/`:
 the real `entry.jar` and a five-package slice of the real index. Test classes: `EntryVerifierTest`,
-`SyncRulesTest`, `IndexReaderTest`, `CatalogRulesTest`, `RepoNamesTest`, `AdbOutputTest`.
+`SyncRulesTest`, `IndexReaderTest`, `CatalogRulesTest`, `RepoNamesTest`, `ApkInspectorTest`, `AdbOutputTest`.
+`ApkInspectorTest` uses a real 9 kB APK from the repository.
 
 Not covered by automated tests, verified by hand on a device: the `PackageInstaller` flow, `PackageManager`
 visibility, and a live end-to-end sync.

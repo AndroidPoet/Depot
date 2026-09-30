@@ -23,10 +23,20 @@ Early. Read this before relying on it.
 
 1. `entry.jar` must be signed by the pinned F-Droid certificate.
 2. The index must match the size and SHA-256 named in that entry, and may not be older than the stored one.
-3. Every APK must match the size and SHA-256 named in the index before it reaches an installer.
+3. Every APK must match the size and SHA-256 named in the index.
+4. The APK's own signature must be valid, and its package name, version code and signing certificate must be the
+   ones the index names. Only then does it reach an installer.
+
+On desktop, downloads go to a per-user, owner-only cache folder, never a shared temp folder.
 
 Icons are fetched over HTTPS and are not hash-checked. [`SPEC.md`](SPEC.md) has the full rules, the version-choice
 logic and the review notes.
+
+## Download
+
+Desktop installers for macOS, Windows and Linux are on the [releases page](https://github.com/AndroidPoet/Depot/releases).
+They are not code-signed; the release notes say how to open them and how to check a download against
+`SHA256SUMS` and its build attestation.
 
 ## Build
 
@@ -36,6 +46,7 @@ Needs JDK 21 and the Android SDK (`sdk.dir` in `local.properties`).
 ./gradlew :desktopApp:run              # run the desktop app
 ./gradlew :androidApp:assembleDebug    # build the Android APK
 ./gradlew :shared:desktopTest          # run the tests
+./gradlew :desktopApp:packageDmg       # or packageMsi, packageDeb, packageRpm, on the matching OS
 ```
 
 Desktop looks for `adb` in `$ANDROID_HOME`, `$ANDROID_SDK_ROOT`, the default SDK location, then `PATH`.
@@ -50,4 +61,5 @@ Desktop looks for `adb` in `$ANDROID_HOME`, `$ANDROID_SDK_ROOT`, the default SDK
 
 GPL-3.0-or-later, see [`LICENSE`](LICENSE). The bundled IBM Plex fonts are under the SIL Open Font License, see
 [`licenses/IBM-Plex-OFL.txt`](licenses/IBM-Plex-OFL.txt). The test fixtures under
-`shared/src/desktopTest/resources/fixtures/` are a small slice of the public F-Droid index and its signed entry file.
+`shared/src/desktopTest/resources/fixtures/` are a small slice of the public F-Droid index, its signed entry file, and one small APK from the repository
+(`com.zinaro.cachecleanerwidget`, GPL-3.0-only).
