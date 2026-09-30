@@ -1,0 +1,148 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - run: ./gradlew :shared:desktopTest :androidApp:assembleDebug
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  package:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            tasks: :desktopApp:packageDmg
+            label: macos-arm64
+          - os: macos-15-intel
+            tasks: :desktopApp:packageDmg
+            label: macos-x64
+          - os: windows-latest
+            tasks: :desktopApp:packageMsi
+            label: windows-x64
+          - os: ubuntu-latest
+            tasks: :desktopApp:packageDeb :desktopApp:packageRpm
+            label: linux-x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+      - if: github.ref_type == 'tag'
+        run: echo "DEPOT_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - run: ./gradlew ${{ matrix.tasks }}
+      - name: Collect installers
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then version="${GITHUB_REF_NAME#v}"; else version="0.1.0-${GITHUB_SHA::7}"; fi
+          mkdir dist
+          for file in desktopApp/build/compose/binaries/main/*/*; do
+            case "$file" in
+              *.dmg|*.msi|*.deb|*.rpm) cp "$file" "dist/Depot-$version-${{ matrix.label }}.${file##*.}" ;;
+            esac
+          done
+          ls -l dist
+          test -n "$(ls dist)"
+      - name: Check the installers open
+        run: |
+          for file in dist/*; do
+            case "$file" in
+              *.dmg) hdiutil verify "$file" ;;
+              *.deb) dpkg-deb --info "$file" ;;
+              *.rpm) rpm -qip "$file" ;;
+              *.msi) test "$(stat -c %s "$file")" -gt 20000000 ;;
+            esac
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: installers-${{ matrix.label }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    if: ${{ !cancelled() && github.ref_type == 'tag' && needs.test.result == 'success' }}
+    needs: [test, package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: installers-*
+          path: dist
+          merge-multiple: true
+      - name: Write checksum files
+        working-directory: dist
+        run: |
+          sha256sum Depot-* > SHA256SUMS
+          sha512sum Depot-* > SHA512SUMS
+          md5sum Depot-* > MD5SUMS
+          cat SHA256SUMS
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/Depot-*
+      - name: Publish the release
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --prerelease --title "Depot ${TAG#v}" --notes-file .github/release-notes.md
+          gh release upload "$TAG" dist/* --clobber
+
+  verify:
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: read
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Download the published files and check them the way a user would
+        run: |
+          mkdir published && cd published
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY"
+          ls -l
+          sha256sum -c SHA256SUMS
+          sha512sum -c SHA512SUMS
+          md5sum -c MD5SUMS
+          for file in Depot-*; do gh attestation verify "$file" --repo "$GITHUB_REPOSITORY"; done

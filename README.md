@@ -35,8 +35,11 @@ logic and the review notes.
 ## Download
 
 Desktop installers for macOS, Windows and Linux are on the [releases page](https://github.com/AndroidPoet/Depot/releases).
-They are not code-signed; the release notes say how to open them and how to check a download against
-`SHA256SUMS` and its build attestation.
+They are not code-signed. The release notes say how to open them, and [`docs/VERIFY.md`](docs/VERIFY.md) says how to
+check a download against its checksums (SHA-256, SHA-512, MD5) and its build attestation.
+
+Every push to `main` also builds all installers and a debug Android APK; they are attached to the run on the
+[Actions page](https://github.com/AndroidPoet/Depot/actions) as artifacts.
 
 ## Build
 

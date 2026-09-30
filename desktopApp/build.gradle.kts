@@ -8,6 +8,9 @@ plugins {
 
 kotlin { jvmToolchain(21) }
 
+val appVersion = providers.environmentVariable("DEPOT_VERSION").getOrElse("0.1.0")
+val macVersion = if (appVersion.startsWith("0.")) "1" + appVersion.removePrefix("0") else appVersion
+
 dependencies {
     implementation(project(":shared"))
     implementation(compose.desktop.currentOs)
@@ -21,14 +24,14 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Depot"
-            packageVersion = "0.1.0"
+            packageVersion = appVersion
             description = "F-Droid client that installs to a phone over adb"
             vendor = "AndroidPoet"
             licenseFile.set(rootProject.file("LICENSE"))
             includeAllModules = true
             macOS {
                 bundleID = "dev.androidpoet.depot"
-                packageVersion = "1.0.0"
+                packageVersion = macVersion
             }
             windows {
                 menuGroup = "Depot"

@@ -12,7 +12,6 @@ Desktop builds of Depot for macOS, Windows and Linux. This is an early preview.
 
 **Check your download**
 
-- `SHA256SUMS` lists the hash of every file: `shasum -a 256 -c SHA256SUMS --ignore-missing`
-- Every file has a build attestation proving it was built by this repository's workflow: `gh attestation verify <file> --repo AndroidPoet/Depot`
+See [docs/VERIFY.md](https://github.com/AndroidPoet/Depot/blob/main/docs/VERIFY.md). In short: compare the file against `SHA256SUMS`, and run `gh attestation verify <file> --repo AndroidPoet/Depot` to prove it was built by this repository's workflow.
 
 Installing apps needs `adb` (Android platform-tools) on the computer and USB debugging enabled on the phone.
