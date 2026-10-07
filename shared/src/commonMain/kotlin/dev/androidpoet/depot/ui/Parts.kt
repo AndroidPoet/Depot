@@ -99,6 +99,13 @@ fun IconButton(glyph: ImageVector, onClick: () -> Unit, modifier: Modifier = Mod
 
 @Composable
 fun SearchField(text: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier, height: Dp = 40.dp) {
+    // The caller's text comes back through flows a frame or more late. Echoing that into the field drops and
+    // reorders fast keystrokes, so the field keeps what was typed and only reports it upward.
+    var typed by remember { mutableStateOf(text) }
+    val change = { next: String ->
+        typed = next
+        onChange(next)
+    }
     Row(
         modifier.height(height).clip(RoundedCornerShape(8.dp)).background(Ui.colors.sunken).padding(start = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -106,18 +113,18 @@ fun SearchField(text: String, onChange: (String) -> Unit, placeholder: String, m
         Glyph(Glyphs.Search, Ui.colors.inkFaint, size = 18.dp)
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-            if (text.isEmpty()) Label(placeholder, Ui.type.body, color = Ui.colors.inkFaint, maxLines = 1)
+            if (typed.isEmpty()) Label(placeholder, Ui.type.body, color = Ui.colors.inkFaint, maxLines = 1)
             BasicTextField(
-                value = text,
-                onValueChange = onChange,
+                value = typed,
+                onValueChange = change,
                 singleLine = true,
                 textStyle = Ui.type.body.copy(color = Ui.colors.ink),
                 cursorBrush = SolidColor(Ui.colors.accent),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (text.isNotEmpty()) {
-            IconButton(Glyphs.Close, onClick = { onChange("") }, tint = Ui.colors.inkFaint, touch = height)
+        if (typed.isNotEmpty()) {
+            IconButton(Glyphs.Close, onClick = { change("") }, tint = Ui.colors.inkFaint, touch = height)
         } else {
             Spacer(Modifier.width(12.dp))
         }

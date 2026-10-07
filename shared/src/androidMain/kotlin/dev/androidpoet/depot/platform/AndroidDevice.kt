@@ -1,5 +1,7 @@
 package dev.androidpoet.depot.platform
 
+import android.app.Activity
+import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -8,9 +10,13 @@ import android.content.IntentFilter
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
+import dev.androidpoet.depot.Brand
 import dev.androidpoet.depot.catalog.DeviceProfile
 import dev.androidpoet.depot.catalog.InstalledApp
 import dev.androidpoet.depot.engine.DeviceState
@@ -43,7 +49,41 @@ class AndroidDevice(private val context: Context) : TargetDevice {
         },
     )
 
-    override suspend fun install(apk: File, packageName: String, onAwaitingConfirmation: () -> Unit): String? =
+    override suspend fun install(apk: File, packageName: String, onAwaitingConfirmation: () -> Unit): String? {
+        if (!installsAllowed(onAwaitingConfirmation)) {
+            return "Allow ${Brand.NAME} to install apps, then try again"
+        }
+        return commit(apk, packageName, onAwaitingConfirmation)
+    }
+
+    // The system aborts a session that detours through this setting, so it is settled before a session exists.
+    private suspend fun installsAllowed(onAwaitingConfirmation: () -> Unit): Boolean {
+        val packages = context.packageManager
+        if (packages.canRequestPackageInstalls()) return true
+        onAwaitingConfirmation()
+        awaitReturnFrom(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
+        return packages.canRequestPackageInstalls()
+    }
+
+    private suspend fun awaitReturnFrom(screen: Intent) = suspendCancellableCoroutine { continuation ->
+        val app = context.applicationContext as Application
+        val onReturn = object : ResumeCallbacks() {
+            override fun onActivityResumed(activity: Activity) {
+                app.unregisterActivityLifecycleCallbacks(this)
+                if (continuation.isActive) continuation.resume(Unit)
+            }
+        }
+        app.registerActivityLifecycleCallbacks(onReturn)
+        continuation.invokeOnCancellation { app.unregisterActivityLifecycleCallbacks(onReturn) }
+        try {
+            context.startActivity(screen.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: Exception) {
+            app.unregisterActivityLifecycleCallbacks(onReturn)
+            if (continuation.isActive) continuation.resume(Unit)
+        }
+    }
+
+    private suspend fun commit(apk: File, packageName: String, onAwaitingConfirmation: () -> Unit): String? =
         suspendCancellableCoroutine { continuation ->
             val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
                 setAppPackageName(packageName)
@@ -122,4 +162,13 @@ class AndroidDevice(private val context: Context) : TargetDevice {
         val current = signatures?.lastOrNull() ?: return null
         return MessageDigest.getInstance("SHA-256").digest(current.toByteArray()).joinToString("") { "%02x".format(it) }
     }
+}
+
+private abstract class ResumeCallbacks : Application.ActivityLifecycleCallbacks {
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+    override fun onActivityStarted(activity: Activity) = Unit
+    override fun onActivityPaused(activity: Activity) = Unit
+    override fun onActivityStopped(activity: Activity) = Unit
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+    override fun onActivityDestroyed(activity: Activity) = Unit
 }

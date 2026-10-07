@@ -50,6 +50,15 @@ class FormatTest {
     }
 
     @Test
+    fun test_androidRelease_levelsBeforeLollipop_mapToVersion() {
+        assertEquals("1.0", androidRelease(1))
+        assertEquals("2.3", androidRelease(9))
+        assertEquals("4.0", androidRelease(14))
+        assertEquals("4.1", androidRelease(16))
+        assertEquals("4.4", androidRelease(19))
+    }
+
+    @Test
     fun test_htmlToPlain_paragraphsAndLists_becomeLines() {
         val html = "<p>First &amp; <b>bold</b>.</p><ul><li>One</li><li>Two</li></ul><p>Last<br>line</p>"
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -89,7 +90,7 @@ fun DetailPane(app: CatalogApp, state: HomeState, viewModel: DepotViewModel, com
 
 @Composable
 private fun InstallBlock(app: CatalogApp, status: AppStatus, install: InstallState?, device: DeviceState, viewModel: DepotViewModel) {
-    Column(Modifier.fillMaxWidth().height(76.dp), verticalArrangement = Arrangement.Top) {
+    Column(Modifier.fillMaxWidth().heightIn(min = 76.dp), verticalArrangement = Arrangement.Top) {
         when {
             install is InstallState.Failed -> {
                 Row(verticalAlignment = Alignment.CenterVertically) {

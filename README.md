@@ -15,8 +15,9 @@ Early. Read this before relying on it.
 | | State |
 |---|---|
 | Desktop: sync, signature check, browse, search | Works against the live repository |
-| Desktop: install through `adb` | Written, not yet run against a device |
-| Android: everything | Builds, not yet run on a device |
+| Desktop: install and update through `adb` | Works, checked on an Android 16 emulator |
+| Android: sync, browse, search, install, update | Works, checked on an Android 16 emulator |
+| Either platform on a physical phone, or on Android older than 16 | Not yet tried |
 | Extra repositories, mirrors, index diffs, auto-update | Not implemented |
 
 ## How it decides what to trust

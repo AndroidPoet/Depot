@@ -27,7 +27,22 @@ fun grouped(number: Int): String =
     number.toString().reversed().chunked(3).joinToString(",").reversed()
 
 fun androidRelease(sdk: Int): String = when (sdk) {
-    in Int.MIN_VALUE..20 -> "4.4 or older"
+    in Int.MIN_VALUE..1 -> "1.0"
+    2 -> "1.1"
+    3 -> "1.5"
+    4 -> "1.6"
+    5, 6 -> "2.0"
+    7 -> "2.1"
+    8 -> "2.2"
+    9, 10 -> "2.3"
+    11 -> "3.0"
+    12 -> "3.1"
+    13 -> "3.2"
+    14, 15 -> "4.0"
+    16 -> "4.1"
+    17 -> "4.2"
+    18 -> "4.3"
+    19, 20 -> "4.4"
     21 -> "5.0"
     22 -> "5.1"
     23 -> "6"

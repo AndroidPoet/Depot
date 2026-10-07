@@ -245,7 +245,8 @@ fun AppList(state: HomeState, viewModel: DepotViewModel, compact: Boolean) {
 private fun EmptyList(state: HomeState) {
     val message = when {
         !state.hasCatalog && state.sync is SyncState.Failed -> "The catalogue could not be loaded.\n${state.sync.message}"
-        !state.hasCatalog -> "Fetching the catalogue for the first time"
+        !state.hasCatalog && state.sync != SyncState.Idle -> "Fetching the catalogue for the first time"
+        state.listing.total == 0 -> "Opening the catalogue"
         state.shelf == Shelf.Updates && state.query.text.isBlank() -> "Everything on the device is up to date"
         state.shelf != Shelf.All && state.device !is DeviceState.Ready -> "Connect a phone to see what is installed on it"
         else -> "Nothing matches"

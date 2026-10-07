@@ -98,6 +98,10 @@ One abstraction, two implementations.
   (`QUERY_ALL_PACKAGES`). Install uses a `PackageInstaller` session (`REQUEST_INSTALL_PACKAGES`) with a mutable
   `PendingIntent`; on `STATUS_PENDING_USER_ACTION` the system confirmation is launched. Sessions left over from a
   previous process are abandoned at start.
+  Before a session is created, if the system does not yet let the app install packages, its "Install unknown
+  apps" setting is opened and the install waits for the user to come back. Allowed: the install carries on.
+  Not allowed: it fails with words that say what to do. (A session committed without the permission is aborted
+  by the system as soon as the user leaves for that setting, which reads as "Install was cancelled".)
 - **Desktop:** the first device from `adb devices -l` in state `device`. `adb` is looked up in `$ANDROID_HOME`,
   `$ANDROID_SDK_ROOT`, the default SDK location for the OS, then `PATH`. SDK level and ABIs come from `getprop`,
   installed apps from `pm list packages --show-versioncode`, install is `adb install -r`, with
@@ -135,12 +139,17 @@ the real `entry.jar` and a five-package slice of the real index. Test classes: `
 Not covered by automated tests, verified by hand on a device: the `PackageInstaller` flow, `PackageManager`
 visibility, and a live end-to-end sync.
 
+Verified by hand on 2026-10-06, Android 16 (API 36) emulator, arm64: first sync (`JarFile` accepts `entry.jar`
+on Android), browse, search, Installed and Updates shelves, install and update through `PackageInstaller`
+including the unknown-apps detour (allowed and declined) and a cancelled confirmation, and from desktop an
+install and an update through `adb`. Not yet tried: a physical phone, and Android older than 16.
+
 ## 9. Critic dispositions (2026-09-30)
 
 | # | Finding | Disposition |
 |---|---|---|
 | 1 | Entry tests pass with a broken chain | Fixed: added forged-manifest and signature-file tamper tests. A jar re-signed with another key exercises the same check as a tampered signature file, so no separate test. |
-| 2 | Signature is SHA256withRSA, `JarFile` works | Fixed: hand-rolled PKCS#7 dropped, §1 corrected, `JarFile` used. Android still to be confirmed on a device. |
+| 2 | Signature is SHA256withRSA, `JarFile` works | Fixed: hand-rolled PKCS#7 dropped, §1 corrected, `JarFile` used. Confirmed on Android 16 (emulator, 2026-10-06). |
 | 3 | DER walker underspecified | Moot after 2. |
 | 4 | Signer data dropped | Fixed for Android (model, rules, tests). Desktop cannot read the installed signer; it reports adb's failure text. Deferred. |
 | 5 | adb calls without a serial | Fixed: `-s` everywhere, re-probe before install, test on the command builder. |

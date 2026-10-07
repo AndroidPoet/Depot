@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 
@@ -176,6 +177,7 @@ class DepotEngine(
     private fun describe(error: Exception): String = when (error) {
         is UnknownHostException -> "No connection to f-droid.org"
         is EntryVerificationException, is IntegrityException -> error.message.orEmpty()
+        is IOException -> "The connection to f-droid.org was interrupted (${error.message}). Try again"
         else -> "${error::class.simpleName}: ${error.message}"
     }
 
